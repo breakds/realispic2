@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><!-- TMPL_VAR title --></title>
+    <link href="<!-- TMPL_VAR icon -->" rel="shortcut icon" type="image/x-icon"/>
+
+    <!-- CSS Files -->
+    <!-- TMPL_LOOP css-include -->
+    <link href="<!-- TMPL_VAR url -->" rel="stylesheet">
+    <!-- /TMPL_LOOP -->
+
+    <!-- JavaScript Libraries -->
+    <!-- TMPL_LOOP js-include -->
+    <script src="<!--TMPL_VAR url -->"></script>
+    <!-- /TMPL_LOOP -->
+    
+    <style type="text/css"><!-- TMPL_VAR css --></style>
+  </head>
+  <body>
+    <div id="content">
+    </div>
+
+
+    <!-- JavaScript -->
+    <script><!-- TMPL_VAR javascript --></script>
+  </body>
+</html>
