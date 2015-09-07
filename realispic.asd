@@ -12,7 +12,8 @@
                :clack 
                :lack
                :hunchentoot
-               :html-template)
+               :html-template
+               :cl-fad)
   :components ((:module "src" :components
                         ((:file "compiler")
                          (:file "widget" :depends-on ("compiler"))

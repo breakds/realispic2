@@ -38,6 +38,32 @@
                    (asdf:system-source-directory 'realispic))
   "The path to the html template file used in realispic.")
 
+
+(defun preprocess-includes (includes static-path static-root)
+  "Find all the files from the local source, and copy it to
+   static-root. Quantify those files with static-path."
+  (mapcar (lambda (file)
+            (handler-case 
+                (etypecase file
+                  (string file)
+                  (cons (ecase (car file)
+                          (:local (let ((source (merge-pathnames
+                                                 (third file)
+                                                 (asdf:system-source-directory 
+                                                  (second file))))
+                                        (target (merge-pathnames
+                                                 (third file)
+                                                 static-root)))
+                                    (ensure-directories-exist target)
+                                    (cl-fad:copy-file source target :overwrite t)
+                                    ;; Return the reconstructed static
+                                    ;; path.
+                                    (merge-pathnames (third file)
+                                                     static-path))))))
+              (t (e) (error "Bad include: ~a due to ~a" 
+                            file e))))
+          includes))
+
 (defun compile-app (&key
                       (title "Undefined Name")
                       (static-path "/asset/")
@@ -48,7 +74,8 @@
                       (widget nil))
   "Compile the javascript, css and html of the app. Return a string
    containing the generated html."
-  (let ((js-file-path (merge-pathnames js-file-name static-root)))
+  (let ((js-file-path (merge-pathnames js-file-name static-root))
+        (includes (preprocess-includes includes static-path static-root)))
     (ensure-directories-exist js-file-path)
     (multiple-value-bind (body referenced-widgets body-css)
         (compile-psx widget :psx-only t)
@@ -129,7 +156,7 @@
                                            :static-root ,static-root
                                            :js-file-name ,js-file-name
                                            :icon ,icon
-                                           :includes ,includes
+                                           :includes ',includes
                                            :widget ',widget)))
               (lambda (,env)
                 (declare (ignore ,env))
