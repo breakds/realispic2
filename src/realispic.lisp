@@ -4,5 +4,8 @@
     (defpackage realispic
       (:import-from :realispic.application
                     :def-app)
-      (:export :def-app))))
+      (:import-from :realispic.widget
+                    :def-widget)
+      (:export :def-app
+               :def-widget))))
 (in-package :realispic)
