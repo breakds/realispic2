@@ -13,13 +13,15 @@
                :lack
                :hunchentoot
                :html-template
+               :cl-template
                :cl-fad)
   :components ((:module "src" :components
                         ((:file "compiler")
                          (:file "widget" :depends-on ("compiler"))
                          (:file "css")
+                         (:file "bootstrap")
                          (:file "application" :depends-on ("widget" "css"))
-                         (:file "realispic" :depends-on ("application")))))
+                         (:file "realispic" :depends-on ("application" "bootstrap")))))
   :description "A simple web framework based on clack, parenscript and React.js.")
   
   

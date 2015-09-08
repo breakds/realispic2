@@ -66,16 +66,16 @@
 
 (defun compile-app (&key
                       (title "Undefined Name")
-                      (static-path "/asset/")
-                      (static-root "/tmp/")
+                      (path "/asset/")
+                      (root "/tmp/")
                       (js-file-name "realispic-app.js")
                       (icon "")
                       (includes nil)
                       (widget nil))
   "Compile the javascript, css and html of the app. Return a string
    containing the generated html."
-  (let ((js-file-path (merge-pathnames js-file-name static-root))
-        (includes (preprocess-includes includes static-path static-root)))
+  (let ((js-file-path (merge-pathnames js-file-name root))
+        (includes (preprocess-includes includes path root)))
     (ensure-directories-exist js-file-path)
     (multiple-value-bind (body referenced-widgets body-css)
         (compile-psx widget :psx-only t)
@@ -113,13 +113,14 @@
                                                 (remove-if-not (lambda (path)
                                                                  (match-file-type path "css"))
                                                                includes)))
-                       :js-include `((:url "https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js")
-                                     (:url "https://fb.me/react-with-addons-0.13.3.js")
-                                     ,@(mapcar (lambda (x) `(:url ,x))
+                       :react-js '((:url "https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js")
+                                   (:url "https://fb.me/react-with-addons-0.13.3.js")
+                                   (:url "https://fb.me/JSXTransformer-0.13.3.js"))
+                       :js-include `(,@(mapcar (lambda (x) `(:url ,x))
                                                (remove-if-not (lambda (path) 
                                                                 (match-file-type path "js"))
                                                               includes)))
-                       :js (format nil "~a" (merge-pathnames js-file-name static-path))
+                       :js (format nil "~a" (merge-pathnames js-file-name path))
                        :inline-css (compile-css 
                                     (append body-css 
                                             (loop for widget-name in all-dependencies
@@ -133,12 +134,15 @@
                      (server :hunchentoot)
                      (title "Undefined Name")
                      (port 5000)
-                     (static-path "/asset/")
+                     (static-path "/assets/")
                      (static-root "/tmp/")
+                     (generated-path "/main/")
+                     (generated-root "/tmp/")
                      (js-file-name "realispic-app.js")
                      (icon "")
                      (includes nil)
-                     (widget nil))
+                     (widget nil)
+                     (system nil))
   ;; TODO(breakds): ensure that static-path and static-root are
   ;; directory like (tailing slash).
   (with-gensyms (env html-text)
@@ -151,9 +155,11 @@
             :session 
             (:static :path ,static-path
                      :root ,static-root)
+            (:static :path ,generated-path
+                     :root ,generated-root)
             (let ((,html-text (compile-app :title ,title
-                                           :static-path ,static-path
-                                           :static-root ,static-root
+                                           :path ,generated-path
+                                           :root ,generated-root
                                            :js-file-name ,js-file-name
                                            :icon ,icon
                                            :includes ',includes
@@ -173,6 +179,9 @@
                         (clack:stop ,app-handler-name))))
              (ecase command
                (:start (try-stop)
+                       ,@(if system
+                             `((ql:quickload ,system))
+                             nil)
                        (setf ,app-handler-name
                              (clack:clackup ,app-function-name
                                             :port ,port

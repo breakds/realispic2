@@ -1,0 +1,16 @@
+(realispic:import-widget app :original-name "App")
+
+(realispic:def-app <%= (@ name) %> ()
+    :title "<%= (@ name) %>"
+    :icon "assets/icon/favico.png"
+    :port 5000
+    :generated-root "<%= (@ generated-root) %>"
+    :static-root (merge-pathnames "assets/"
+                                  (asdf:system-source-directory '<%= (@ name) %>))
+    :widget (:app ())
+    :system :<%= (@ name) %>
+    :includes ((:local :<%= (@ name) %> "app.js")
+               ;; Material Design Lite
+               "https://storage.googleapis.com/code.getmdl.io/1.0.4/material.indigo-pink.min.css"
+               "https://storage.googleapis.com/code.getmdl.io/1.0.4/material.min.js"
+               "https://fonts.googleapis.com/icon?family=Material+Icons"))

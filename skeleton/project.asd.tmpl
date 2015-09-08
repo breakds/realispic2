@@ -1,0 +1,8 @@
+(defsystem <%= (@ name) %>
+  :version "0.0.1"
+  :author "Anonymous Author"
+  :license "MIT"
+  :depends-on (:realispic)
+  :components ((:file "app" :depends-on ("app.js"))
+               (:static-file "app.js"))
+  :description "Automatically generated Realispic WebApp skeleton.")
