@@ -16,7 +16,8 @@
                :cl-template
                :cl-fad)
   :components ((:module "src" :components
-                        ((:file "compiler")
+                        ((:file "candy")
+                         (:file "compiler")
                          (:file "widget" :depends-on ("compiler"))
                          (:file "css")
                          (:file "bootstrap")

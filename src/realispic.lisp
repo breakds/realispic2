@@ -13,5 +13,6 @@
       (:export :def-app
                :def-widget
                :import-widget
-               :bootstrap))))
+               :bootstrap
+               :*template-path*))))
 (in-package :realispic)

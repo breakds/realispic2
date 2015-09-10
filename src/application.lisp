@@ -11,7 +11,8 @@
                     :*realispic-widget-table*)
       (:import-from :realispic.css
                     :compile-css)
-      (:export :def-app))))
+      (:export :def-app
+               :*template-path*))))
 (in-package :realispic.application)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -36,7 +37,8 @@
 (defvar *template-path* 
   (merge-pathnames "template/realispic-template.html"
                    (asdf:system-source-directory 'realispic))
-  "The path to the html template file used in realispic.")
+  "The path to the html template file used in realispic, shadow this
+   to use customized templates.")
 
 
 (defun preprocess-includes (includes static-path static-root)
@@ -187,11 +189,3 @@
                                             :port ,port
                                             :server ,server)))
                (:stop (try-stop)))))))))
-  
-                 
-                     
-                                   
-
-                         
-      
-    
