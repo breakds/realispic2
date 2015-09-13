@@ -11,6 +11,8 @@
                     :*realispic-widget-table*)
       (:import-from :realispic.css
                     :compile-css)
+      (:import-from :realispic.rpc
+                    :rpc-middleware)
       (:export :def-app
                :*template-path*))))
 (in-package :realispic.application)
@@ -39,7 +41,6 @@
                    (asdf:system-source-directory 'realispic))
   "The path to the html template file used in realispic, shadow this
    to use customized templates.")
-
 
 (defun preprocess-includes (includes static-path static-root)
   "Find all the files from the local source, and copy it to
@@ -159,6 +160,7 @@
                      :root ,static-root)
             (:static :path ,generated-path
                      :root ,generated-root)
+            #'rpc-middleware
             (let ((,html-text (compile-app :title ,title
                                            :path ,generated-path
                                            :root ,generated-root
