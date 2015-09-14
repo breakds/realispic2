@@ -31,7 +31,13 @@
 			  (push dep new-candidates))
 		     (bfs new-candidates new-closure)))))
       (bfs initial-set initial-set)))
-  
+
+  (defun is-external (url)
+    (let ((prefix "http"))
+      (and (> (length url) (length prefix))
+           (string-equal (subseq url 0 (length prefix))
+                         prefix))))
+
   (defun match-file-type (url &rest types)
     (some (lambda (x) (string-equal (pathname-type url) x))
 	  types)))
@@ -112,16 +118,25 @@
                  *template-path*
                  (list :title title
                        :icon icon
+                       ;; Note(breakds): currently we treat everything
+                       ;; included that is not javascript as css.
                        :css-include `(,@(mapcar (lambda (x) `(:url ,x))
                                                 (remove-if-not (lambda (path)
-                                                                 (match-file-type path "css"))
+                                                                 (or (match-file-type path "css")
+                                                                     (not (match-file-type path "js"))))
                                                                includes)))
-                       :react-js '((:url "https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js")
-                                   (:url "https://fb.me/react-with-addons-0.13.3.js")
-                                   (:url "https://fb.me/JSXTransformer-0.13.3.js"))
+                       :external-js `((:url "https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js")
+                                      (:url "https://fb.me/react-with-addons-0.13.3.js")
+                                      (:url "https://fb.me/JSXTransformer-0.13.3.js")
+                                      ,@(mapcar (lambda (x) `(:url ,x))
+                                                (remove-if-not (lambda (path)
+                                                                 (and (match-file-type path "js")
+                                                                      (is-external path)))
+                                                               includes)))
                        :js-include `(,@(mapcar (lambda (x) `(:url ,x))
                                                (remove-if-not (lambda (path) 
-                                                                (match-file-type path "js"))
+                                                                (and (match-file-type path "js")
+                                                                     (not (is-external path))))
                                                               includes)))
                        :js (format nil "~a" (merge-pathnames js-file-name path))
                        :inline-css (compile-css 
