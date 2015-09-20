@@ -129,12 +129,13 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter *html-tags* 
-    '(:html :body :head :span ;; Structure
+    '(:html :body :head :span :header :section;; Structure
       :p :h1 :h2 :h3 :h4 :h5 :h6 :br ;; Text
       :a ;; Links
       :div :frame :iframe :form :figure :img :video ;; Container
+      :aside :main :footer
       :table :tbody :tr :td :th :thead :tfoot :caption;; Table
-      :ul :ol :li ;; List
+      :nav :ul :ol :li ;; List
       :input :textarea :select :option :optgroup :button :label :fieldset :legend ;; Interaction
       :script ;; Script
       :b :i :sub :sup :big :small :hr) ;; Style
@@ -185,7 +186,7 @@
     (symbolicate (string keyword)))
 
   (defun process-style-name (style-name)
-    style-name)
+    (alexandria:symbolicate style-name))
 
   (defun compile-animation (pairs)
     (let* ((animation-name (format nil "tween-~a" (ps-gensym)))
