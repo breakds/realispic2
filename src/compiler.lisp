@@ -33,7 +33,7 @@
   ;; Example Matchers:
   ;; 1) ((:symbol "lambda") args &rest body)
   ;; 2) ((:symbol "let") bindings &rest body)
-  ;; 3) ((:keyword "html") attributes 
+  ;; 3) ((:keyword "html") attributes
   (defun compile-matcher (name pattern body)
     (with-gensyms (shadowed)
       `(,name (form ,shadowed matcher-list)
@@ -42,7 +42,7 @@
               (let ((shadowed ,shadowed))
 		(declare (ignorable shadowed))
                 ,(if pattern
-                     (let ((lambda-list 
+                     (let ((lambda-list
                             (loop for entry in pattern
                                collect (cond ((match-&-symbol entry "&rest")
                                               entry)
@@ -55,10 +55,10 @@
                                               (car entry))
                                              (t (error "compile-matcher: failed to parse pattern ~a."
                                                        pattern))))))
-                       `(and 
+                       `(and
                          ;; first try destructuring-bind, if it fails, it
                          ;; suggests "no match".
-                         (handler-case 
+                         (handler-case
                              (destructuring-bind ,lambda-list form
                                (declare (ignore ,@(remove-if (lambda (x) (match-&-symbol x))
                                                              lambda-list)))
@@ -77,7 +77,7 @@
                                                           (case (length entry)
                                                             (2 `(match-symbol ,(car entry)))
                                                             (3 `(match-symbol ,(car entry) ,(third entry)))
-                                                            (t (error (concatenate 'string 
+                                                            (t (error (concatenate 'string
                                                                                    "compile-matcher: "
                                                                                    "Too many specifiers in ~a.")
                                                                       entry))))
@@ -110,7 +110,7 @@
 	   (labels ((execute (,form ,shadowed ,enabled-matchers &key (on nil) (off nil))
 		      (let ((,updated-matchers (remove-if (lambda (x) (member x off))
 							  (union ,enabled-matchers on))))
-			(or (loop 
+			(or (loop
 			       for ,matcher in ,updated-matchers
 			       for ,result = (funcall ,matcher ,form ,shadowed ,updated-matchers)
 			       when ,result
@@ -119,7 +119,8 @@
                             ;; default cases.
 			    (and (atom ,form) ,form)
 			    (loop for ,sub-form in ,form
-			       collect (execute ,sub-form ,shadowed ,updated-matchers)))))
+			       collect (execute ,sub-form ,shadowed ,updated-matchers
+                                                :on (list #'atom-attribute))))))
 		    (initialize (&rest ,enabled-matchers)
 		      (funcall #'execute form nil ,enabled-matchers))
 		    ,@(mapcar (lambda (x)
@@ -128,7 +129,7 @@
 	     ,@body))))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defparameter *html-tags* 
+  (defparameter *html-tags*
     '(:html :body :head :span :header :section;; Structure
       :p :h1 :h2 :h3 :h4 :h5 :h6 :br ;; Text
       :a ;; Links
@@ -142,7 +143,7 @@
     "All the keywords that will be recognized as standard html tags by compile-psx.")
 
   (defmacro compile-error ((&rest format-string) &rest args)
-    `(error (format nil "Realispic Compilation Error: ~{~a~}." 
+    `(error (format nil "Realispic Compilation Error: ~{~a~}."
                     ',format-string)
             ,@args))
 
@@ -160,7 +161,7 @@
                                    "is not a symbol.")
                                   (car arg) arg))
                   ((eq (cadr arg) :attribute)
-                   (push (symbol-name (car arg)) 
+                   (push (symbol-name (car arg))
                          attribute-names))
                   ((eq (cadr arg) :state)
                    (push (list (car arg) (third arg))
@@ -202,7 +203,7 @@
                   (push value animation-block)
                   (push (format nil "animation-~a" key) animation-block)))))
       (values (list (list* :keyframes animation-name keyframes)
-                    (list* `(,(format nil ".~a" animation-name)) 
+                    (list* `(,(format nil ".~a" animation-name))
                            "animation-name"
                            animation-name
                            animation-block))
@@ -214,7 +215,7 @@
                                    (not (one-of-symbols-p form shadowed)))
                           `(@ this props ,form)))
      (chain-ref ((at-symbol :symbol "@") &rest paths)
-                `(@ ,(process (car paths)) 
+                `(@ ,(process (car paths))
                      ,@(loop for path in (cdr paths)
                           collect (if (atom path)
                                       path
@@ -223,27 +224,29 @@
      (let-form ((let-symbol :symbol "let") bindings &rest body)
                `(let ,(mapcar (lambda (binding)
                                 (list (car binding)
-                                      (process (second binding))))
+                                      (process (second binding)
+                                               :on `(,#'atom-attribute))))
                               bindings)
-		  ,@(progn (mapcar (lambda (binding) (push-shadowed (car binding))) 
+		  ,@(progn (mapcar (lambda (binding) (push-shadowed (car binding)))
 				   bindings)
 			   nil)
-                  ,@(process-each body)))
+                  ,@(process-each body :on `(,#'atom-attribute))))
      (let*-form ((let-symbol :symbol "let*") bindings &rest body)
 		`(let* ,(mapcar (lambda (binding)
 				  (let ((result (list (car binding)
-						      (process (second binding)))))
+						      (process (second binding)
+                                                               :on `(,#'atom-attribute)))))
 				    (push-shadowed (car binding))
 				    result))
 				bindings)
-		   ,@(process-each body)))
+		   ,@(process-each body :on `(,#'atom-attribute))))
      (lambda-form ((lambda-symbol :symbol "lambda") arg-list &rest body)
 		  `(lambda ,(mapcar (lambda (arg)
 				      ;; TODO(breakds): Should
 				      ;; consider shadow in default
 				      ;; value forms.
 				      (cond ((match-&-symbol arg) arg)
-					    ((match-symbol arg) 
+					    ((match-symbol arg)
 					     (push-shadowed arg)
 					     arg)
 					    ((and (listp arg) (match-symbol (car arg)))
@@ -252,19 +255,20 @@
 					    (t (error "lambda-form: ~a is not a valid argument."
 						      arg))))
 				    arg-list)
-		     ,@(process-each body)))
+		     ,@(process-each body :on `(,#'atom-attribute))))
      (update-state-form ((fun-name :symbol "update-state") &rest pairs)
                         (let ((valid-state-names (mapcar (lambda (x)
                                                            (symbol-name (car x)))
                                                          state-defs)))
-                          `((@ this set-state) 
-                            (create ,@(loop for (var-name value) 
+                          `((@ this set-state)
+                            (create ,@(loop for (var-name value)
                                          on pairs by #'cddr
                                          append (if (member (symbol-name var-name)
                                                             valid-state-names
                                                             :test #'string-equal)
-                                                    (list var-name 
+                                                    (list var-name
                                                           (process value
+                                                                   :on `(,#'atom-attribute)
                                                                    :off `(,#'update-state-form
                                                                           ,#'psx-tags)))
                                                     (error (concatenate 'string
@@ -277,10 +281,12 @@
 		  (case (length indices)
 		    (0 `(@ this props children))
 		    (1 `(aref (@ this props children) ,(process (car indices)
+                                                                :on `(,#'atom-attribute)
                                                                 :off `(,#'psx-tags))))
 		    (t `(list ,@(mapcar (lambda (x)
                                           `(aref (@ this props children)
                                                  ,(process x
+                                                           :on `(,#'atom-attribute)
                                                            :off `(,@'pxs-tags))))
                                         indices))))))
      (state-ref ((state-key :keyword) var-name)
@@ -300,7 +306,7 @@
 		  `(@ this state ,var-name)))
      (local-slots ((operator :symbol "with-slots") slots &rest body)
                   `(with-slots ,slots
-                       ,@(process-each body)))
+                       ,@(process-each body :on `(,#'atom-attribute))))
      (psx-tags ((tag :keyword) attributes &rest body)
 	       (unless (or (eq tag :state)
                            (eq tag :children))
@@ -343,7 +349,7 @@
                        ;;
                        ;; This is understandable because we never put
                        ;; html code inside html attributes.
-                       (create ,@(mapcan 
+                       (create ,@(mapcan
                                   (lambda (attribute-pair)
                                     (cond ((string-equal (car attribute-pair) "class")
                                            (loop for entry in (cdr attribute-pair)
@@ -354,23 +360,26 @@
                                                           `(create ,@(loop for (style-name style-value)
                                                                         on (rest attribute-pair)
                                                                         by #'cddr
-                                                                        append (list (process-style-name 
+                                                                        append (list (process-style-name
                                                                                       style-name)
                                                                                      (process style-value)))))
-                                                         (t (process (cadr attribute-pair) 
+                                                         (t (process (cadr attribute-pair)
+                                                                     :on `(,#'atom-attribute)
                                                                      :off `(,#'psx-tags))))))))
                                   attributes)
                                ;; put class in
                                ,@(when classes
                                        `(class-name
                                          (+ ,@(mapcan (lambda (x)
-                                                        `(" " ,(process x :off `(,#'psx-tags))))
+                                                        `(" " ,(process x 
+                                                                        :off `(,#'psx-tags)
+                                                                        :on `(,#'atom-attribute))))
                                                       classes)))))
-                       ,@(process-each body)))))
+                       ,@(process-each body :on `(,#'atom-attribute))))))
      (top-level () (when (or (atom form)
 			     (not (match-symbol (car form) "labels")))
 		     `(render (lambda () ,(process form
-						   :off (list #'top-level 
+						   :off (list #'top-level
 							      #'top-level-labels)
 						   :on (list #'atom-attribute
                                                              #'chain-ref
@@ -383,9 +392,9 @@
                                                              #'child-ref
                                                              #'local-slots))))))
      (top-level-labels ((labels-symbol :symbol "labels") fun-defs &rest body)
-		       `(render 
+		       `(render
 			 (lambda ()
-			   ,@(process-each body 
+			   ,@(process-each body
 					   :off (list #'top-level #'top-level-labels)
 					   :on (list #'atom-attribute
                                                      #'chain-ref
@@ -399,7 +408,7 @@
                                                      #'local-slots)))
 			 ,@(mapcan (lambda (fun-def)
 				     (list (car fun-def)
-					   (process (cons 'lambda (rest fun-def)) 
+					   (process (cons 'lambda (rest fun-def))
 						    :off (list #'top-level #'top-level-labels)
 						    :on (list #'atom-attribute
                                                               #'chain-ref
@@ -412,6 +421,6 @@
                                                               #'child-ref
                                                               #'local-slots))))
 				   fun-defs))))
-  (if psx-only 
+  (if psx-only
       (values (initialize #'psx-tags) dependencies css)
       (values (initialize #'top-level #'top-level-labels) dependencies css)))
