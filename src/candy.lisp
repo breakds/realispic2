@@ -4,12 +4,17 @@
     (defpackage realispic.candy
       (:use :cl :parenscript)
       (:export :lambda!
+               :=>
                :map
                :random-int
                :trace))))
 (in-package :realispic.candy)
 
 (defpsmacro lambda! (args &body body)
+  `(chain (lambda ,args ,@body)
+          (bind this)))
+
+(defpsmacro => (args &body body)
   `(chain (lambda ,args ,@body)
           (bind this)))
   
