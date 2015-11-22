@@ -71,7 +71,9 @@
              ;; 3) Convert the result into JSON
              (lambda (,query-parameters)
                (list 200
-                     '(:content-type "application/json")
+                     '(:content-type "application/json"
+                       ;; TODO(breakds): make this header optional
+                       "Access-Control-Allow-Origin" "*")
                      (to-json 
                       (,name ,@(mapcar (lambda (arg)
                                          (etypecase arg
